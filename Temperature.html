@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThermoCheck Pro - Advanced Fever Detection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .watermark {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .language-selector {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .lang-btn {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .lang-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+        
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .problem-statement {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .problem-statement h2 {
+            margin-bottom: 15px;
+            color: #ffcc00;
+        }
+        
+        .problem-statement ul {
+            margin-left: 20px;
+        }
+        
+        .problem-statement li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .camera-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .results-section {
+            flex: 1;
+            min-width: 300px;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .section-title {
+            margin-bottom: 15px;
+            color: #ffcc00;
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: #000;
+            object-fit: cover;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .face-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .face-box {
+            position: absolute;
+            border: 2px solid #4CAF50;
+            border-radius: 10px;
+            background: rgba(76, 175, 80, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .face-indicator {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        
+        .face-status {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .face-detected {
+            color: #4CAF50;
+        }
+        
+        .face-not-detected {
+            color: #f44336;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        #capture-btn {
+            background: linear-gradient(to right, #2196F3, #0b7dda);
+        }
+        
+        #reset-btn {
+            background: linear-gradient(to right, #f44336, #d32f2f);
+        }
+        
+        .temperature-display {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .temperature-value {
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .normal {
+            color: #4CAF50;
+        }
+        
+        .fever {
+            color: #f44336;
+        }
+        
+        .status-message {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #ffcc00;
+        }
+        
+        .instructions ol {
+            margin-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .warning {
+            background-color: rgba(255, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #f44336;
+        }
+        
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .feature-card {
+            flex: 1;
+            min-width: 200px;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .temp-toggle {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            gap: 10px;
+        }
+        
+        .temp-unit {
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .temp-unit.active {
+            background: rgba(255, 255, 255, 0.4);
+            font-weight: bold;
+        }
+        
+        .history-section {
+            margin-top: 30px;
+            background-color: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .language-selector {
+                position: relative;
+                justify-content: center;
+                margin-bottom: 15px;
+            }
+            
+            .camera-container {
+                width: 250px;
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">CREATED BY ROHIT KUMAR</div>
+    
+    <div class="container">
+        <header>
+            <h1>ThermoCheck Pro</h1>
+            <p class="subtitle" id="subtitle">Advanced Fever Detection Using Your Webcam</p>
+            
+            <div class="language-selector">
+                <button class="lang-btn active" data-lang="en">English</button>
+                <button class="lang-btn" data-lang="hi">हिंदी</button>
+                <button class="lang-btn" data-lang="es">Español</button>
+                <button class="lang-btn" data-lang="fr">Français</button>
+            </div>
+        </header>
+        
+        <section class="problem-statement">
+            <h2 id="problem-title">The Problem We're Solving</h2>
+            <ul id="problem-list">
+                <li>Many people don't have access to thermometers.</li>
+                <li><strong>Fever detection</strong> is often delayed or inconvenient.</li>
+                <li><strong>Current solutions</strong> are expensive or need external devices.</li>
+                <li>Checking fever should be as simple as using your phone.</li>
+            </ul>
+        </section>
+        
+        <div class="temp-toggle">
+            <div class="temp-unit active" data-unit="f">°F</div>
+            <div class="temp-unit" data-unit="c">°C</div>
+        </div>
+        
+        <div class="app-container">
+            <section class="camera-section">
+                <h2 class="section-title" id="camera-title">Camera Feed</h2>
+                
+                <div class="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="face-overlay" id="face-overlay"></div>
+                </div>
+                
+                <div class="face-status face-not-detected" id="face-status">
+                    No Face Detected - Please position your face in the circle
+                </div>
+                
+                <canvas id="canvas"></canvas>
+                
+                <div class="controls">
+                    <button id="start-camera"><i class="fas fa-camera"></i> <span id="start-camera-text">Start Camera</span></button>
+                    <button id="capture-btn" disabled><i class="fas fa-thermometer-half"></i> <span id="capture-text">Check Temperature</span></button>
+                    <button id="reset-btn" disabled><i class="fas fa-redo"></i> <span id="reset-text">Reset</span></button>
+                </div>
+                
+                <div class="instructions">
+                    <h3 id="instructions-title">How to Use:</h3>
+                    <ol id="instructions-list">
+                        <li>Click "Start Camera" to enable your webcam</li>
+                        <li>Position your face clearly in the circle</li>
+                        <li>Wait for face detection confirmation</li>
+                        <li>Click "Check Temperature" to analyze</li>
+                        <li>View your temperature estimate and health status</li>
+                    </ol>
+                </div>
+            </section>
+            
+            <section class="results-section">
+                <h2 class="section-title" id="results-title">Results</h2>
+                <div class="temperature-display">
+                    <div class="temperature-value">--.-°F</div>
+                    <div class="status-message" id="status-message">Waiting for measurement...</div>
+                </div>
+                
+                <div class="instructions">
+                    <h3 id="understanding-title">Understanding Your Results:</h3>
+                    <ul id="understanding-list">
+                        <li><strong>Normal:</strong> 97°F - 99°F (36.1°C - 37.2°C)</li>
+                        <li><strong>Low-grade fever:</strong> 99.1°F - 100.9°F (37.3°C - 38.3°C)</li>
+                        <li><strong>Fever:</strong> 101°F - 103.8°F (38.4°C - 39.9°C)</li>
+                        <li><strong>High fever:</strong> 104°F+ (40°C+)</li>
+                    </ul>
+                </div>
+                
+                <div class="warning">
+                    <strong id="warning-title">Important:</strong> <span id="warning-text">This is a conceptual demonstration and should not be used for medical diagnosis. Always consult a healthcare professional for accurate fever assessment.</span>
+                </div>
+            </section>
+        </div>
+        
+        <section class="history-section">
+            <h2 id="history-title">Measurement History</h2>
+            <div class="history-list" id="history-list">
+                <div class="history-item">
+                    <span>No measurements yet</span>
+                </div>
+            </div>
+        </section>
+        
+        <div class="features">
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3 id="feature1-title">Multi-language</h3>
+                <p id="feature1-text">Supports English, Hindi, Spanish, and French</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">👁️</div>
+                <h3 id="feature2-title">Face Detection</h3>
+                <p id="feature2-text">Advanced face detection for accurate temperature measurement</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3 id="feature3-title">History Tracking</h3>
+                <p id="feature3-text">Keep track of your temperature measurements</p>
+            </div>
+        </div>
+        
+        <footer>
+            <p id="footer-text">ThermoCheck Pro - Making fever detection accessible to everyone</p>
+            <p>Note: This is a demonstration of concept. Actual medical diagnosis requires proper equipment.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const startCameraBtn = document.getElementById('start-camera');
+            const captureBtn = document.getElementById('capture-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const temperatureValue = document.querySelector('.temperature-value');
+            const statusMessage = document.querySelector('.status-message');
+            const historyList = document.getElementById('history-list');
+            const faceOverlay = document.getElementById('face-overlay');
+            const faceStatus = document.getElementById('face-status');
+            
+            // Language elements
+            const langButtons = document.querySelectorAll('.lang-btn');
+            const tempUnits = document.querySelectorAll('.temp-unit');
+            
+            // Variables
+            let stream = null;
+            let temperature = null;
+            let currentUnit = 'f'; // Default to Fahrenheit
+            let currentLang = 'en'; // Default to English
+            let measurementHistory = [];
+            let faceDetectionInterval = null;
+            let isFaceDetected = false;
+            
+            // Language content
+            const translations = {
+                en: {
+                    subtitle: "Advanced Fever Detection Using Your Webcam",
+                    problemTitle: "The Problem We're Solving",
+                    problemList: [
+                        "Many people don't have access to thermometers.",
+                        "<strong>Fever detection</strong> is often delayed or inconvenient.",
+                        "<strong>Current solutions</strong> are expensive or need external devices.",
+                        "Checking fever should be as simple as using your phone."
+                    ],
+                    cameraTitle: "Camera Feed",
+                    startCameraText: "Start Camera",
+                    captureText: "Check Temperature",
+                    resetText: "Reset",
+                    instructionsTitle: "How to Use:",
+                    instructionsList: [
+                        "Click \"Start Camera\" to enable your webcam",
+                        "Position your face clearly in the circle",
+                        "Wait for face detection confirmation",
+                        "Click \"Check Temperature\" to analyze",
+                        "View your temperature estimate and health status"
+                    ],
+                    resultsTitle: "Results",
+                    statusWaiting: "Waiting for measurement...",
+                    understandingTitle: "Understanding Your Results:",
+                    understandingList: [
+                        "<strong>Normal:</strong> 97°F - 99°F (36.1°C - 37.2°C)",
+                        "<strong>Low-grade fever:</strong> 99.1°F - 100.9°F (37.3°C - 38.3°C)",
+                        "<strong>Fever:</strong> 101°F - 103.8°F (38.4°C - 39.9°C)",
+                        "<strong>High fever:</strong> 104°F+ (40°C+)"
+                    ],
+                    warningTitle: "Important:",
+                    warningText: "This is a conceptual demonstration and should not be used for medical diagnosis. Always consult a healthcare professional for accurate fever assessment.",
+                    historyTitle: "Measurement History",
+                    feature1Title: "Multi-language",
+                    feature1Text: "Supports English, Hindi, Spanish, and French",
+                    feature2Title: "Face Detection",
+                    feature2Text: "Advanced face detection for accurate temperature measurement",
+                    feature3Title: "History Tracking",
+                    feature3Text: "Keep track of your temperature measurements",
+                    footerText: "ThermoCheck Pro - Making fever detection accessible to everyone",
+                    statuses: {
+                        below: "Below Normal Temperature",
+                        normal: "Normal Temperature",
+                        lowFever: "Low-grade Fever",
+                        fever: "Fever Detected"
+                    },
+                    faceStatus: {
+                        detected: "Face Detected - Ready for Temperature Check",
+                        notDetected: "No Face Detected - Please position your face in the circle"
+                    }
+                },
+                hi: {
+                    subtitle: "आपके वेबकैम का उपयोग करके उन्नत बुखार का पता लगाना",
+                    problemTitle: "हम जिस समस्या का समाधान कर रहे हैं",
+                    problemList: [
+                        "बहुत से लोगों के पास थर्मामीटर तक पहुंच नहीं है।",
+                        "<strong>बुखार का पता लगाना</strong> अक्सर विलंबित या असुविधाजनक होता है।",
+                        "<strong>वर्तमान समाधान</strong> महंगे हैं या बाहरी उपकरणों की आवश्यकता है।",
+                        "बुखार की जांच आपके फोन का उपयोग करने जितना सरल होना चाहिए।"
+                    ],
+                    cameraTitle: "कैमरा फीड",
+                    startCameraText: "कैमरा शुरू करें",
+                    captureText: "तापमान जांचें",
+                    resetText: "रीसेट करें",
+                    instructionsTitle: "उपयोग कैसे करें:",
+                    instructionsList: [
+                        "अपना वेबकैम सक्षम करने के लिए \"कैमरा शुरू करें\" पर क्लिक करें",
+                        "सर्कल में अपना चेहरा स्पष्ट रूप से रखें",
+                        "चेहरे का पता लगाने की पुष्टि की प्रतीक्षा करें",
+                        "विश्लेषण करने के लिए \"तापमान जांचें\" पर क्लिक करें",
+                        "अपना तापमान अनुमान और स्वास्थ्य स्थिति देखें"
+                    ],
+                    resultsTitle: "परिणाम",
+                    statusWaiting: "माप की प्रतीक्षा कर रहे हैं...",
+                    understandingTitle: "अपने परिणामों को समझना:",
+                    understandingList: [
+                        "<strong>सामान्य:</strong> 97°F - 99°F (36.1°C - 37.2°C)",
+                        "<strong>हल्का बुखार:</strong> 99.1°F - 100.9°F (37.3°C - 38.3°C)",
+                        "<strong>बुखार:</strong> 101°F - 103.8°F (38.4°C - 39.9°C)",
+                        "<strong>तीव्र बुखार:</strong> 104°F+ (40°C+)"
+                    ],
+                    warningTitle: "महत्वपूर्ण:",
+                    warningText: "यह एक संकल्पनात्मक प्रदर्शन है और इसका उपयोग चिकित्सा निदान के लिए नहीं किया जाना चाहिए। सटीक बुखार मूल्यांकन के लिए हमेशा एक स्वास्थ्य देखभाल पेशेवर से परामर्श लें।",
+                    historyTitle: "माप इतिहास",
+                    feature1Title: "बहुभाषी",
+                    feature1Text: "अंग्रेजी, हिंदी, स्पेनिश और फ्रेंच का समर्थन करता है",
+                    feature2Title: "चेहरा पहचान",
+                    feature2Text: "सटीक तापमान माप के लिए उन्नत चेहरा पहचान",
+                    feature3Title: "इतिहास ट्रैकिंग",
+                    feature3Text: "अपने तापमान मापों का ट्रैक रखें",
+                    footerText: "थर्मोचेक प्रो - बुखार का पता लगाना सभी के लिए सुलभ बनाना",
+                    statuses: {
+                        below: "सामान्य तापमान से नीचे",
+                        normal: "सामान्य तापमान",
+                        lowFever: "हल्का बुखार",
+                        fever: "बुखार का पता चला"
+                    },
+                    faceStatus: {
+                        detected: "चेहरा पहचाना गया - तापमान जांच के लिए तैयार",
+                        notDetected: "कोई चेहरा पहचाना नहीं गया - कृपया सर्कल में अपना चेहरा रखें"
+                    }
+                },
+                es: {
+                    subtitle: "Detección Avanzada de Fiebre Usando Tu Cámara Web",
+                    problemTitle: "El Problema Que Estamos Resolviendo",
+                    problemList: [
+                        "Muchas personas no tienen acceso a termómetros.",
+                        "La <strong>detección de fiebre</strong> a menudo se retrasa o es inconveniente.",
+                        "Las <strong>soluciones actuales</strong> son costosas o necesitan dispositivos externos.",
+                        "Verificar la fiebre debería ser tan simple como usar tu teléfono."
+                    ],
+                    cameraTitle: "Transmisión de Cámara",
+                    startCameraText: "Iniciar Cámara",
+                    captureText: "Verificar Temperatura",
+                    resetText: "Reiniciar",
+                    instructionsTitle: "Cómo Usar:",
+                    instructionsList: [
+                        "Haz clic en \"Iniciar Cámara\" para habilitar tu cámara web",
+                        "Coloca tu cara claramente en el círculo",
+                        "Espera la confirmación de detección de rostro",
+                        "Haz clic en \"Verificar Temperatura\" para analizar",
+                        "Ve tu estimación de temperatura y estado de salud"
+                    ],
+                    resultsTitle: "Resultados",
+                    statusWaiting: "Esperando medición...",
+                    understandingTitle: "Entendiendo Tus Resultados:",
+                    understandingList: [
+                        "<strong>Normal:</strong> 97°F - 99°F (36.1°C - 37.2°C)",
+                        "<strong>Fiebre baja:</strong> 99.1°F - 100.9°F (37.3°C - 38.3°C)",
+                        "<strong>Fiebre:</strong> 101°F - 103.8°F (38.4°C - 39.9°C)",
+                        "<strong>Fiebre alta:</strong> 104°F+ (40°C+)"
+                    ],
+                    warningTitle: "Importante:",
+                    warningText: "Esta es una demostración conceptual y no debe utilizarse para diagnóstico médico. Siempre consulte a un profesional de la salud para una evaluación precisa de la fiebre.",
+                    historyTitle: "Historial de Mediciones",
+                    feature1Title: "Multilingüe",
+                    feature1Text: "Soporta inglés, hindi, español y francés",
+                    feature2Title: "Detección Facial",
+                    feature2Text: "Detección facial avanzada para medición precisa de temperatura",
+                    feature3Title: "Seguimiento de Historial",
+                    feature3Text: "Realiza un seguimiento de tus mediciones de temperatura",
+                    footerText: "ThermoCheck Pro - Haciendo que la detección de fiebre sea accesible para todos",
+                    statuses: {
+                        below: "Temperatura por Debajo de lo Normal",
+                        normal: "Temperatura Normal",
+                        lowFever: "Fiebre Baja",
+                        fever: "Fiebre Detectada"
+                    },
+                    faceStatus: {
+                        detected: "Rostro Detectado - Listo para Verificar Temperatura",
+                        notDetected: "Rostro No Detectado - Por favor coloca tu rostro en el círculo"
+                    }
+                },
+                fr: {
+                    subtitle: "Détection Avancée de la Fièvre à l'Aide de Votre Webcam",
+                    problemTitle: "Le Problème Que Nous Résolvons",
+                    problemList: [
+                        "Beaucoup de gens n'ont pas accès à des thermomètres.",
+                        "La <strong>détection de la fièvre</strong> est souvent retardée ou peu pratique.",
+                        "Les <strong>solutions actuelles</strong> sont coûteuses ou nécessitent des appareils externes.",
+                        "Vérifier la fièvre devrait être aussi simple que d'utiliser votre téléphone."
+                    ],
+                    cameraTitle: "Flux de la Caméra",
+                    startCameraText: "Démarrer la Caméra",
+                    captureText: "Vérifier la Température",
+                    resetText: "Réinitialiser",
+                    instructionsTitle: "Comment Utiliser:",
+                    instructionsList: [
+                        "Cliquez sur \"Démarrer la Caméra\" pour activer votre webcam",
+                        "Positionnez votre visage clairement dans le cercle",
+                        "Attendez la confirmation de détection du visage",
+                        "Cliquez sur \"Vérifier la Température\" pour analyser",
+                        "Consultez votre estimation de température et votre état de santé"
+                    ],
+                    resultsTitle: "Résultats",
+                    statusWaiting: "En attente de mesure...",
+                    understandingTitle: "Comprendre Vos Résultats:",
+                    understandingList: [
+                        "<strong>Normal:</strong> 97°F - 99°F (36.1°C - 37.2°C)",
+                        "<strong>Fièvre légère:</strong> 99.1°F - 100.9°F (37.3°C - 38.3°C)",
+                        "<strong>Fièvre:</strong> 101°F - 103.8°F (38.4°C - 39.9°C)",
+                        "<strong>Forte fièvre:</strong> 104°F+ (40°C+)"
+                    ],
+                    warningTitle: "Important:",
+                    warningText: "Ceci est une démonstration conceptuelle et ne doit pas être utilisée pour un diagnostic médical. Consultez toujours un professionnel de la santé pour une évaluation précise de la fièvre.",
+                    historyTitle: "Historique des Mesures",
+                    feature1Title: "Multilingue",
+                    feature1Text: "Prend en charge l'anglais, l'hindi, l'espagnol et le français",
+                    feature2Title: "Détection Faciale",
+                    feature2Text: "Détection faciale avancée pour une mesure précise de la température",
+                    feature3Title: "Suivi de l'Historique",
+                    feature3Text: "Gardez une trace de vos mesures de température",
+                    footerText: "ThermoCheck Pro - Rendre la détection de la fièvre accessible à tous",
+                    statuses: {
+                        below: "Température Inférieure à la Normale",
+                        normal: "Température Normale",
+                        lowFever: "Fièvre Légère",
+                        fever: "Fièvre Détectée"
+                    },
+                    faceStatus: {
+                        detected: "Visage Détecté - Prêt à Vérifier la Température",
+                        notDetected: "Visage Non Détecté - Veuillez positionner votre visage dans le cercle"
+                    }
+                }
+            };
+            
+            // Event listeners
+            startCameraBtn.addEventListener('click', startCamera);
+            captureBtn.addEventListener('click', captureAndAnalyze);
+            resetBtn.addEventListener('click', resetApp);
+            
+            // Language switching
+            langButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    langButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentLang = this.getAttribute('data-lang');
+                    updateLanguage();
+                });
+            });
+            
+            // Temperature unit switching
+            tempUnits.forEach(unit => {
+                unit.addEventListener('click', function() {
+                    tempUnits.forEach(u => u.classList.remove('active'));
+                    this.classList.add('active');
+                    currentUnit = this.getAttribute('data-unit');
+                    updateTemperatureDisplay();
+                });
+            });
+            
+            // Update language function
+            function updateLanguage() {
+                const langData = translations[currentLang];
+                
+                document.getElementById('subtitle').textContent = langData.subtitle;
+                document.getElementById('problem-title').textContent = langData.problemTitle;
+                
+                const problemList = document.getElementById('problem-list');
+                problemList.innerHTML = '';
+                langData.problemList.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = item;
+                    problemList.appendChild(li);
+                });
+                
+                document.getElementById('camera-title').textContent = langData.cameraTitle;
+                document.getElementById('start-camera-text').textContent = langData.startCameraText;
+                document.getElementById('capture-text').textContent = langData.captureText;
+                document.getElementById('reset-text').textContent = langData.resetText;
+                
+                document.getElementById('instructions-title').textContent = langData.instructionsTitle;
+                const instructionsList = document.getElementById('instructions-list');
+                instructionsList.innerHTML = '';
+                langData.instructionsList.forEach(item => {
+                    const li = document.createElement('li');
+                    li.textContent = item;
+                    instructionsList.appendChild(li);
+                });
+                
+                document.getElementById('results-title').textContent = langData.resultsTitle;
+                if (!temperature) {
+                    document.getElementById('status-message').textContent = langData.statusWaiting;
+                }
+                
+                document.getElementById('understanding-title').textContent = langData.understandingTitle;
+                const understandingList = document.getElementById('understanding-list');
+                understandingList.innerHTML = '';
+                langData.understandingList.forEach(item => {
+                    const li = document.createElement('li');
+                    li.innerHTML = item;
+                    understandingList.appendChild(li);
+                });
+                
+                document.getElementById('warning-title').textContent = langData.warningTitle;
+                document.getElementById('warning-text').textContent = langData.warningText;
+                
+                document.getElementById('history-title').textContent = langData.historyTitle;
+                document.getElementById('feature1-title').textContent = langData.feature1Title;
+                document.getElementById('feature1-text').textContent = langData.feature1Text;
+                document.getElementById('feature2-title').textContent = langData.feature2Title;
+                document.getElementById('feature2-text').textContent = langData.feature2Text;
+                document.getElementById('feature3-title').textContent = langData.feature3Title;
+                document.getElementById('feature3-text').textContent = langData.feature3Text;
+                document.getElementById('footer-text').textContent = langData.footerText;
+                
+                // Update face status
+                updateFaceStatus();
+                
+                // Update status message if we have a temperature
+                if (temperature) {
+                    updateStatusMessage();
+                }
+                
+                // Update history items
+                updateHistoryDisplay();
+            }
+            
+            // Start camera function
+            async function startCamera() {
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user',
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        } 
+                    });
+                    
+                    video.srcObject = stream;
+                    startCameraBtn.disabled = true;
+                    
+                    // Start face detection simulation
+                    startFaceDetection();
+                    
+                } catch (err) {
+                    console.error("Error accessing camera: ", err);
+                    alert("Unable to access camera. Please check permissions and try again.");
+                }
+            }
+            
+            // Simulate face detection
+            function startFaceDetection() {
+                if (faceDetectionInterval) {
+                    clearInterval(faceDetectionInterval);
+                }
+                
+                faceDetectionInterval = setInterval(() => {
+                    // Simulate face detection with 70% probability when camera is on
+                    const hasFace = Math.random() < 0.7;
+                    
+                    if (hasFace && !isFaceDetected) {
+                        isFaceDetected = true;
+                        captureBtn.disabled = false;
+                        updateFaceStatus();
+                        drawFaceBox();
+                    } else if (!hasFace && isFaceDetected) {
+                        isFaceDetected = false;
+                        captureBtn.disabled = true;
+                        updateFaceStatus();
+                        clearFaceBox();
+                    }
+                }, 2000);
+            }
+            
+            // Update face status display
+            function updateFaceStatus() {
+                const langData = translations[currentLang];
+                
+                if (isFaceDetected) {
+                    faceStatus.textContent = langData.faceStatus.detected;
+                    faceStatus.className = "face-status face-detected";
+                } else {
+                    faceStatus.textContent = langData.faceStatus.notDetected;
+                    faceStatus.className = "face-status face-not-detected";
+                }
+            }
+            
+            // Draw simulated face box
+            function drawFaceBox() {
+                faceOverlay.innerHTML = '';
+                
+                const faceBox = document.createElement('div');
+                faceBox.className = 'face-box';
+                faceBox.style.width = '70%';
+                faceBox.style.height = '80%';
+                faceBox.style.top = '10%';
+                faceBox.style.left = '15%';
+                
+                const faceIndicator = document.createElement('div');
+                faceIndicator.className = 'face-indicator';
+                faceIndicator.textContent = 'Face Detected';
+                
+                faceBox.appendChild(faceIndicator);
+                faceOverlay.appendChild(faceBox);
+            }
+            
+            // Clear face box
+            function clearFaceBox() {
+                faceOverlay.innerHTML = '';
+            }
+            
+            // Capture and analyze function
+            function captureAndAnalyze() {
+                if (!stream || !isFaceDetected) return;
+                
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Simulate temperature analysis
+                const baseTemp = 36.5; // Base normal temperature in Celsius
+                const variation = (Math.random() - 0.5) * 2; // Random variation between -1 and +1
+                
+                // 15% chance of simulating a fever for demonstration
+                const hasFever = Math.random() < 0.15;
+                
+                if (hasFever) {
+                    temperature = baseTemp + 2 + (Math.random() * 1.5); // 38.5°C - 40°C
+                } else {
+                    temperature = baseTemp + variation; // 35.5°C - 37.5°C
+                }
+                
+                // Round to one decimal place
+                temperature = Math.round(temperature * 10) / 10;
+                
+                // Add to history
+                const now = new Date();
+                const historyItem = {
+                    tempC: temperature,
+                    tempF: celsiusToFahrenheit(temperature),
+                    timestamp: now,
+                    status: getTemperatureStatus(temperature)
+                };
+                
+                measurementHistory.unshift(historyItem);
+                if (measurementHistory.length > 10) {
+                    measurementHistory = measurementHistory.slice(0, 10);
+                }
+                
+                updateTemperatureDisplay();
+                updateHistoryDisplay();
+                
+                captureBtn.disabled = true;
+                resetBtn.disabled = false;
+            }
+            
+            // Update temperature display
+            function updateTemperatureDisplay() {
+                if (!temperature) return;
+                
+                const displayTemp = currentUnit === 'f' ? celsiusToFahrenheit(temperature) : temperature;
+                const unitSymbol = currentUnit === 'f' ? '°F' : '°C';
+                
+                temperatureValue.textContent = `${displayTemp.toFixed(1)}${unitSymbol}`;
+                updateStatusMessage();
+            }
+            
+            // Update status message
+            function updateStatusMessage() {
+                if (!temperature) return;
+                
+                const langData = translations[currentLang];
+                const status = getTemperatureStatus(temperature);
+                
+                statusMessage.textContent = langData.statuses[status];
+                
+                // Update colors
+                if (status === 'below') {
+                    temperatureValue.className = 'temperature-value';
+                    statusMessage.style.color = '#2196F3';
+                } else if (status === 'normal') {
+                    temperatureValue.className = 'temperature-value normal';
+                    statusMessage.style.color = '#4CAF50';
+                } else if (status === 'lowFever') {
+                    temperatureValue.className = 'temperature-value';
+                    statusMessage.style.color = '#FF9800';
+                } else {
+                    temperatureValue.className = 'temperature-value fever';
+                    statusMessage.style.color = '#f44336';
+                }
+            }
+            
+            // Get temperature status
+            function getTemperatureStatus(tempC) {
+                if (tempC < 36.1) return 'below';
+                if (tempC <= 37.2) return 'normal';
+                if (tempC <= 38.3) return 'lowFever';
+                return 'fever';
+            }
+            
+            // Update history display
+            function updateHistoryDisplay() {
+                const langData = translations[currentLang];
+                
+                if (measurementHistory.length === 0) {
+                    historyList.innerHTML = '<div class="history-item"><span>No measurements yet</span></div>';
+                    return;
+                }
+                
+                historyList.innerHTML = '';
+                measurementHistory.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    
+                    const displayTemp = currentUnit === 'f' ? item.tempF : item.tempC;
+                    const unitSymbol = currentUnit === 'f' ? '°F' : '°C';
+                    
+                    const timeString = item.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                    
+                    historyItem.innerHTML = `
+                        <span>${displayTemp.toFixed(1)}${unitSymbol} - ${langData.statuses[item.status]}</span>
+                        <span>${timeString}</span>
+                    `;
+                    
+                    historyList.appendChild(historyItem);
+                });
+            }
+            
+            // Reset function
+            function resetApp() {
+                temperatureValue.textContent = `--.-${currentUnit === 'f' ? '°F' : '°C'}`;
+                temperatureValue.className = 'temperature-value';
+                statusMessage.textContent = translations[currentLang].statusWaiting;
+                statusMessage.style.color = 'white';
+                captureBtn.disabled = !isFaceDetected;
+                resetBtn.disabled = true;
+                temperature = null;
+            }
+            
+            // Utility functions
+            function celsiusToFahrenheit(c) {
+                return (c * 9/5) + 32;
+            }
+            
+            // Add some visual effects to make it more engaging
+            function addVisualEffects() {
+                // Add pulsing effect to capture button when ready
+                setInterval(() => {
+                    if (!captureBtn.disabled) {
+                        captureBtn.style.boxShadow = 
+                            '0 0 0 0 rgba(33, 150, 243, 0.7)';
+                        setTimeout(() => {
+                            if (!captureBtn.disabled) {
+                                captureBtn.style.boxShadow = 
+                                    '0 0 0 10px rgba(33, 150, 243, 0)';
+                            }
+                        }, 600);
+                    }
+                }, 1200);
+            }
+            
+            // Initialize visual effects
+            addVisualEffects();
+        });
+    </script>
+</body>
+</html>
